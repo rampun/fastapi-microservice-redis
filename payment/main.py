@@ -56,7 +56,7 @@ async def create(request: Request, background_tasks: BackgroundTasks):  # id, qu
         price=product['price'],
         fee=0.2*product['price'],
         total=1.2*product['price'],
-        quantity=product['quantity'],
+        quantity=body['quantity'],
         status='pending'
     )
 
@@ -68,6 +68,13 @@ async def create(request: Request, background_tasks: BackgroundTasks):  # id, qu
 
 
 def order_completed(order: Order):
-    time.sleep(10)
+    time.sleep(5)
     order.status = 'completed'
+
+    # handle if product is deleted before the product purchase is complete
+    # isssue refund
+
     order.save()
+
+    # send an event to redis to reduce the stock // using redis stream here
+    redis.xadd('order_completed', order.dict(), '*')
